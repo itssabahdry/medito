@@ -1,6 +1,7 @@
 import { authRoute, profileRoute, documentsRoute, adminRoute } from '@/lib/identity';
 import { query } from '@/lib/db';
 import { directoryRoute } from '@/lib/directory';
+import { slotsRoute,appointmentsRoute,reviewsRoute } from '@/lib/scheduling';
 import { checkOrigin, handleError, json } from '@/lib/http';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -14,6 +15,9 @@ export async function dispatch(request: Request): Promise<Response> {
     if(resource==='auth') response=await authRoute(request,id);
     if(resource==='profile') response=await profileRoute(request);
     if(resource==='therapists') response=await directoryRoute(request,id);
+    if(resource==='slots') response=await slotsRoute(request,id);
+    if(resource==='appointments') response=await appointmentsRoute(request,id);
+    if(resource==='reviews') response=await reviewsRoute(request);
     if(resource==='documents') response=await documentsRoute(request,id);
     if(resource==='admin' && id==='providers') response=await adminRoute(request,action);
     return response || json({error:'این مسیر وجود ندارد.'},404);
