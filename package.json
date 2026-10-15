@@ -1,12 +1,35 @@
 {
-  "name": "medito", "version": "0.1.0", "private": true,
+  "name": "medito",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "next dev", "build": "next build", "start": "next start",
-    "typecheck": "tsc --noEmit", "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
     "db:admin": "node --env-file-if-exists=.env scripts/create-admin.mjs",
     "db:seed": "node --env-file-if-exists=.env scripts/seed.mjs",
-    "test": "node --env-file-if-exists=.env --import tsx --test tests/*.test.ts"
+    "test": "node --env-file-if-exists=.env scripts/test.mjs",
+    "db:local": "node --env-file-if-exists=.env scripts/local-db.mjs",
+    "test:e2e": "playwright test"
   },
-  "dependencies": { "next": "latest", "react": "latest", "react-dom": "latest", "pg": "^8.16.3", "zod": "^4.1.0", "lucide-react": "^0.468.0" },
-  "devDependencies": { "typescript": "^5.9.0", "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@types/pg": "^8.15.0", "tsx": "^4.20.0" }
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "latest",
+    "pg": "^8.16.3",
+    "react": "latest",
+    "react-dom": "latest",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
 }

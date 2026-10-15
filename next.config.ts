@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   output: 'standalone', poweredByHeader: false,
+  outputFileTracingExcludes: { '/*': ['./data/**/*', './.env*', './tests/**/*', './node_modules/@embedded-postgres/**/*'] },
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

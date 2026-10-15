@@ -47,12 +47,12 @@ export function documentType(bytes: Uint8Array, mime: string) {
   const b=Buffer.from(bytes);
   return (mime==='application/pdf' && b.subarray(0,5).toString()==='%PDF-') || (mime==='image/png' && b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) || (mime==='image/jpeg' && b[0]===255 && b[1]===216 && b[2]===255);
 }
-const uploadDir = () => path.resolve(process.env.UPLOAD_DIR || './data/documents');
+const uploadDir = () => path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR || './data/documents');
 export async function documentsRoute(request: Request, id?: string) {
   const user = await requireUser(request);
   if(request.method==='GET' && id) {
     z.uuid().parse(id); const [doc]=await query('SELECT * FROM documents WHERE id=$1',[id]); assert(doc && (doc.user_id===user.id || user.role==='admin'),404,'مدرک پیدا نشد.');
-    const data=await readFile(path.join(uploadDir(),doc.storage_key));
+    const data=await readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ uploadDir(),doc.storage_key));
     return new Response(data,{headers:{'Content-Type':doc.mime,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
   }
   assert(user.role==='therapist',403,'فقط متخصص می‌تواند مدرک بارگذاری کند.');
@@ -63,15 +63,15 @@ export async function documentsRoute(request: Request, id?: string) {
   const kind=z.enum(['identity','license','degree']).parse(form.get('kind')); const file=form.get('file');
   assert(file instanceof File && file.size>0 && file.size<=5*1024*1024,400,'فایل باید حداکثر ۵ مگابایت باشد.');
   const contents=Buffer.from(await file.arrayBuffer()); assert(documentType(contents,file.type),400,'فقط فایل PDF، JPEG یا PNG معتبر پذیرفته می‌شود.');
-  const key=randomUUID(); await mkdir(uploadDir(),{recursive:true}); await writeFile(path.join(uploadDir(),key),contents,{mode:0o600});
+  const key=randomUUID(); await mkdir(/* turbopackIgnore: true */ uploadDir(),{recursive:true}); await writeFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ uploadDir(),key),contents,{mode:0o600});
   let previous: string|undefined;
   try { await transaction(async c=>{
     await c.query('SELECT user_id FROM profiles WHERE user_id=$1 FOR UPDATE',[user.id]);
     previous=(await c.query('SELECT storage_key FROM documents WHERE user_id=$1 AND kind=$2',[user.id,kind])).rows[0]?.storage_key;
     await c.query('INSERT INTO documents(user_id,kind,filename,mime,storage_key) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,kind) DO UPDATE SET filename=$3,mime=$4,storage_key=$5,created_at=now()',[user.id,kind,path.basename(file.name).slice(0,200),file.type,key]);
     await c.query("UPDATE profiles SET status='pending',identity_checked=false,license_checked=false,interview_completed=false,official_reference='' WHERE user_id=$1",[user.id]);
-  }); } catch(error) {await unlink(path.join(uploadDir(),key));throw error;}
-  if(previous) await unlink(path.join(uploadDir(),previous)).catch(()=>{}); return json({ok:true},201);
+  }); } catch(error) {await unlink(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ uploadDir(),key));throw error;}
+  if(previous) await unlink(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ uploadDir(),previous)).catch(()=>{}); return json({ok:true},201);
 }
 const decisionSchema=z.object({status:z.enum(['approved','rejected','changes_requested']),feedback:z.string().trim().max(2000),identity_checked:z.boolean(),license_checked:z.boolean(),interview_completed:z.boolean(),official_reference:z.string().trim().max(500)}).strict();
 export async function adminRoute(request: Request, id?: string) {
