@@ -18,7 +18,7 @@ COPY --from=builder --chown=medito:medito /app/.next/standalone ./
 COPY --from=builder --chown=medito:medito /app/.next/static ./.next/static
 COPY --from=builder --chown=medito:medito /app/public ./public
 COPY --from=builder --chown=medito:medito /app/migrations ./migrations
-COPY --from=builder --chown=medito:medito /app/scripts ./scripts
+COPY --from=builder --chown=medito:medito /app/scripts/migrate.mjs /app/scripts/create-admin.mjs /app/scripts/seed.mjs ./scripts/
 USER medito
 EXPOSE 3000
 CMD ["sh", "-c", "node scripts/migrate.mjs && node server.js"]

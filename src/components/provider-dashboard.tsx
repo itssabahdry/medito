@@ -1,13 +1,238 @@
 'use client';
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from './shell';
-import { specialties,statuses,titles } from '@/lib/constants';
-type Profile={title:string;specialty:string;city:string;address:string;bio:string;license_number:string;experience:number;fee:number;phone_enabled:boolean;status:string;feedback:string};
-type Document={id:string;kind:string;filename:string};
-export function ProviderDashboard(){
-  const [profile,setProfile]=useState<Profile|null>(null);const [documents,setDocuments]=useState<Document[]>([]);const [message,setMessage]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);
-  async function load(){const d=await api('profile');setProfile(d.profile);setDocuments(d.documents);}
-  useEffect(()=>{load().catch(e=>setError(e.message));},[]);
-  if(!profile)return <div className="notice">{error||'در حال دریافت پروفایل…'}</div>;
-  return <><div className="notice info">وضعیت پرونده: <strong>{statuses[profile.status]}</strong>{profile.feedback&&<p>پیام کارشناس: {profile.feedback}</p>}<p>مدارک شما عمومی نیستند. تغییر مدارک یا اطلاعات صلاحیت حرفه‌ای، پرونده را برای بررسی مجدد ارسال می‌کند.</p></div>{error&&<div className="notice error" role="alert">{error}</div>}{message&&<div className="notice" role="status">{message}</div>}<div className="panel"><h2>پروفایل حرفه‌ای</h2><form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');setMessage('');const f=new FormData(e.currentTarget);try{await api('profile',{method:'PUT',body:JSON.stringify({title:f.get('title'),specialty:f.get('specialty'),city:f.get('city'),address:f.get('address'),bio:f.get('bio'),license_number:f.get('license_number'),experience:Number(f.get('experience')),fee:Number(f.get('fee')),phone_enabled:f.get('phone_enabled')==='on'})});await load();setMessage('پروفایل ذخیره شد.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}><div className="form-grid"><label className="field">عنوان حرفه‌ای<select name="title" defaultValue={profile.title}>{titles.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">حوزه تخصص<select name="specialty" defaultValue={profile.specialty}>{specialties.map(x=><option key={x}>{x}</option>)}</select></label><label className="field">شهر<input name="city" defaultValue={profile.city} required minLength={2} maxLength={80}/></label><label className="field">شماره مجوز حرفه‌ای<input name="license_number" defaultValue={profile.license_number} required minLength={3} maxLength={80}/></label><label className="field">سابقه فعالیت (سال)<input name="experience" type="number" min={0} max={70} defaultValue={profile.experience} required/></label><label className="field">هزینه هر جلسه (تومان)<input name="fee" type="number" min={0} max={100000000} defaultValue={profile.fee} required/></label><label className="field full">آدرس مطب<input name="address" defaultValue={profile.address} required minLength={5} maxLength={500}/></label><label className="field full">معرفی و شیوه کار<textarea name="bio" defaultValue={profile.bio} required minLength={20} maxLength={2000}/></label></div><label className="check-row"><input type="checkbox" name="phone_enabled" defaultChecked={profile.phone_enabled}/>مشاوره صوتی داخل برنامه ارائه می‌دهم</label><button className="button small" disabled={busy}>ذخیره پروفایل</button></form></div><div className="panel"><h2>مدارک احراز هویت و صلاحیت</h2><p className="subtle">PDF، JPG یا PNG تا ۵ مگابایت؛ هر مدرک با بارگذاری جدید جایگزین می‌شود.</p>{[['identity','مدرک هویتی'],['license','مجوز فعالیت'],['degree','مدرک تحصیلی']].map(([kind,label])=>{const d=documents.find(x=>x.kind===kind);return <form className="document-row" key={kind} onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;setBusy(true);setError('');setMessage('');try{const f=new FormData(form);f.set('kind',kind);await api('documents',{method:'POST',body:f});await load();form.reset();setMessage('مدرک ذخیره شد و در انتظار بررسی است.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}><strong>{label}</strong>{d&&<a className="text-link" href={'/api/documents/'+d.id}>دریافت مدرک ثبت‌شده</a>}<input aria-label={label} name="file" type="file" accept="application/pdf,image/png,image/jpeg" required/><button className="button small secondary" disabled={busy}>بارگذاری</button></form>;})}</div></>;
+import { specialties, statuses, titles } from '@/lib/constants';
+type Profile = {
+  title: string;
+  specialty: string;
+  city: string;
+  address: string;
+  bio: string;
+  license_number: string;
+  experience: number;
+  fee: number;
+  phone_enabled: boolean;
+  status: string;
+  feedback: string;
+};
+type Document = { id: string; kind: string; filename: string };
+export function ProviderDashboard() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function load() {
+    const d = await api('profile');
+    setProfile(d.profile);
+    setDocuments(d.documents);
+  }
+  useEffect(() => {
+    load().catch((e) => setError(e.message));
+  }, []);
+  if (!profile)
+    return <div className="notice">{error || 'در حال دریافت پروفایل…'}</div>;
+  return (
+    <>
+      <div className="notice info">
+        وضعیت پرونده: <strong>{statuses[profile.status]}</strong>
+        {profile.feedback && <p>پیام کارشناس: {profile.feedback}</p>}
+        <p>
+          مدارک شما عمومی نیستند. تغییر مدارک یا اطلاعات صلاحیت حرفه‌ای، پرونده
+          را برای بررسی مجدد ارسال می‌کند.
+        </p>
+      </div>
+      {error && (
+        <div className="notice error" role="alert">
+          {error}
+        </div>
+      )}
+      {message && (
+        <div className="notice" role="status">
+          {message}
+        </div>
+      )}
+      <div className="panel">
+        <h2>پروفایل حرفه‌ای</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            setMessage('');
+            const f = new FormData(e.currentTarget);
+            try {
+              await api('profile', {
+                method: 'PUT',
+                body: JSON.stringify({
+                  title: f.get('title'),
+                  specialty: f.get('specialty'),
+                  city: f.get('city'),
+                  address: f.get('address'),
+                  bio: f.get('bio'),
+                  license_number: f.get('license_number'),
+                  experience: Number(f.get('experience')),
+                  fee: Number(f.get('fee')),
+                  phone_enabled: f.get('phone_enabled') === 'on',
+                }),
+              });
+              await load();
+              setMessage('پروفایل ذخیره شد.');
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <div className="form-grid">
+            <label className="field">
+              عنوان حرفه‌ای
+              <select name="title" defaultValue={profile.title}>
+                {titles.map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              حوزه تخصص
+              <select name="specialty" defaultValue={profile.specialty}>
+                {specialties.map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              شهر
+              <input
+                name="city"
+                defaultValue={profile.city}
+                required
+                minLength={2}
+                maxLength={80}
+              />
+            </label>
+            <label className="field">
+              شماره مجوز حرفه‌ای
+              <input
+                name="license_number"
+                defaultValue={profile.license_number}
+                required
+                minLength={3}
+                maxLength={80}
+              />
+            </label>
+            <label className="field">
+              سابقه فعالیت (سال)
+              <input
+                name="experience"
+                type="number"
+                min={0}
+                max={70}
+                defaultValue={profile.experience}
+                required
+              />
+            </label>
+            <label className="field">
+              هزینه هر جلسه (تومان)
+              <input
+                name="fee"
+                type="number"
+                min={0}
+                max={100000000}
+                defaultValue={profile.fee}
+                required
+              />
+            </label>
+            <label className="field full">
+              آدرس مطب
+              <input
+                name="address"
+                defaultValue={profile.address}
+                required
+                minLength={5}
+                maxLength={500}
+              />
+            </label>
+            <label className="field full">
+              معرفی و شیوه کار
+              <textarea
+                name="bio"
+                defaultValue={profile.bio}
+                required
+                minLength={20}
+                maxLength={2000}
+              />
+            </label>
+          </div>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              name="phone_enabled"
+              defaultChecked={profile.phone_enabled}
+            />
+            مشاوره صوتی داخل برنامه ارائه می‌دهم
+          </label>
+          <button className="button small" disabled={busy}>
+            ذخیره پروفایل
+          </button>
+        </form>
+      </div>
+      <div className="panel">
+        <h2>مدارک احراز هویت و صلاحیت</h2>
+        <p className="subtle">
+          PDF، JPG یا PNG تا ۵ مگابایت؛ هر مدرک با بارگذاری جدید جایگزین می‌شود.
+        </p>
+        {[
+          ['identity', 'مدرک هویتی'],
+          ['license', 'مجوز فعالیت'],
+          ['degree', 'مدرک تحصیلی'],
+        ].map(([kind, label]) => {
+          const d = documents.find((x) => x.kind === kind);
+          return (
+            <form
+              className="document-row"
+              key={kind}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                setBusy(true);
+                setError('');
+                setMessage('');
+                try {
+                  const f = new FormData(form);
+                  f.set('kind', kind);
+                  await api('documents', { method: 'POST', body: f });
+                  await load();
+                  form.reset();
+                  setMessage('مدرک ذخیره شد و در انتظار بررسی است.');
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <strong>{label}</strong>
+              {d && (
+                <a className="text-link" href={'/api/documents/' + d.id}>
+                  دریافت مدرک ثبت‌شده
+                </a>
+              )}
+              <input
+                aria-label={label}
+                name="file"
+                type="file"
+                accept="application/pdf,image/png,image/jpeg"
+                required
+              />
+              <button className="button small secondary" disabled={busy}>
+                بارگذاری
+              </button>
+            </form>
+          );
+        })}
+      </div>
+    </>
+  );
 }

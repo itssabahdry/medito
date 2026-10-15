@@ -9,3 +9,5 @@ playwright-report/
 data/
 *.log
 *.tsbuildinfo
+*.dump
+*.tar.gz

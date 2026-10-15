@@ -1,14 +1,342 @@
 'use client';
 import Link from 'next/link';
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from './shell';
-import { dateText,money,statuses } from '@/lib/constants';
-type Appointment={id:string;status:string;fee:number;starts_at:string;ends_at:string;mode:string;therapist_id:string;therapist_name:string;patient_name:string;reviewed:boolean};
-type Slot={id:string;starts_at:string;mode:string;booked?:boolean};
-export function Appointments({provider=false}:{provider?:boolean}){
-  const [items,setItems]=useState<Appointment[]>([]);const [error,setError]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const [reviewId,setReviewId]=useState('');const [reschedule,setReschedule]=useState('');const [slots,setSlots]=useState<Slot[]>([]);
-  async function load(){setItems((await api('appointments')).appointments);}useEffect(()=>{load().catch(e=>setError(e.message));},[]);
-  async function change(id:string,action:string,slot_id?:string){setBusy(true);setError('');setMessage('');try{await api('appointments/'+id,{method:'PUT',body:JSON.stringify({action,...(slot_id?{slot_id}:{})})});await load();setReschedule('');setMessage('تغییر نوبت ثبت شد.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  return <div className="panel"><h2>{provider?'جلسه‌های مراجعان':'نوبت‌های من'}</h2>{error&&<div className="notice error" role="alert">{error}</div>}{message&&<div className="notice" role="status">{message}</div>}{!items.length&&<div className="empty">هنوز نوبتی ثبت نشده است.{!provider&&<Link href="/therapists">پیدا کردن متخصص ←</Link>}</div>}{items.map(a=><article className="appointment" key={a.id}><div className="appointment-head"><strong>{provider?a.patient_name:a.therapist_name}</strong><span className={'status '+a.status}>{statuses[a.status]}</span></div><p>{dateText(a.starts_at)} · {a.mode==='voice'?'مشاوره صوتی':'جلسه حضوری'} · {money(a.fee)}</p><div className="appointment-actions">{a.status==='booked'&&<>{+new Date(a.starts_at)>Date.now()&&<><button className="button small secondary" disabled={busy} onClick={()=>void change(a.id,'cancel')}>لغو نوبت</button>{!provider&&<button className="button small secondary" disabled={busy} onClick={async()=>{setError('');try{setSlots((await api('therapists/'+a.therapist_id)).slots);setReschedule(a.id);}catch(e){setError((e as Error).message);}}}>تغییر زمان</button>}</>}{provider&&+new Date(a.ends_at)<=Date.now()&&<button className="button small" disabled={busy} onClick={()=>void change(a.id,'complete')}>ثبت انجام جلسه</button>}{a.mode==='voice'&&Date.now()>=+new Date(a.starts_at)-10*60000&&Date.now()<=+new Date(a.ends_at)+15*60000&&<Link className="button small" href={'/call/'+a.id}>ورود به تماس صوتی</Link>}</>}{!provider&&a.status==='completed'&&!a.reviewed&&<button className="button small secondary" onClick={()=>setReviewId(a.id)}>ثبت نظر</button>}{a.reviewed&&<span className="subtle">نظر شما ثبت شده است.</span>}</div>{reschedule===a.id&&<div className="slot-list">{slots.length?slots.map(s=><button key={s.id} className="button small secondary" disabled={busy} onClick={()=>void change(a.id,'reschedule',s.id)}>{dateText(s.starts_at)} · {s.mode==='voice'?'صوتی':'حضوری'}</button>):<p className="subtle">زمان دیگری برای این متخصص موجود نیست.</p>}<button className="text-button" onClick={()=>setReschedule('')}>بستن</button></div>}{reviewId===a.id&&<form style={{marginTop:15}} onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const f=new FormData(e.currentTarget);try{await api('reviews',{method:'POST',body:JSON.stringify({appointment_id:a.id,rating:Number(f.get('rating')),comment:f.get('comment')})});setReviewId('');await load();setMessage('نظر شما ثبت شد.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}><label className="field">امتیاز<select name="rating" defaultValue="5">{[5,4,3,2,1].map(n=><option key={n} value={n}>{n.toLocaleString('fa-IR')} از ۵</option>)}</select></label><label className="field">تجربه شما<textarea name="comment" required minLength={5} maxLength={1500}/><small>این نظر عمومی است؛ اطلاعات شخصی و جزئیات خصوصی جلسه را ننویسید.</small></label><div className="form-actions"><button className="button small" disabled={busy}>انتشار نظر</button><button type="button" className="text-button" onClick={()=>setReviewId('')}>انصراف</button></div></form>}</article>)}</div>;
+import { dateText, money, statuses } from '@/lib/constants';
+type Appointment = {
+  id: string;
+  status: string;
+  fee: number;
+  starts_at: string;
+  ends_at: string;
+  mode: string;
+  therapist_id: string;
+  therapist_name: string;
+  patient_name: string;
+  reviewed: boolean;
+};
+type Slot = { id: string; starts_at: string; mode: string; booked?: boolean };
+export function Appointments({ provider = false }: { provider?: boolean }) {
+  const [items, setItems] = useState<Appointment[]>([]);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [reviewId, setReviewId] = useState('');
+  const [reschedule, setReschedule] = useState('');
+  const [slots, setSlots] = useState<Slot[]>([]);
+  async function load() {
+    setItems((await api('appointments')).appointments);
+  }
+  useEffect(() => {
+    load().catch((e) => setError(e.message));
+  }, []);
+  async function change(id: string, action: string, slot_id?: string) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api('appointments/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({ action, ...(slot_id ? { slot_id } : {}) }),
+      });
+      await load();
+      setReschedule('');
+      setMessage('تغییر نوبت ثبت شد.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="panel">
+      <h2>{provider ? 'جلسه‌های مراجعان' : 'نوبت‌های من'}</h2>
+      {error && (
+        <div className="notice error" role="alert">
+          {error}
+        </div>
+      )}
+      {message && (
+        <div className="notice" role="status">
+          {message}
+        </div>
+      )}
+      {!items.length && (
+        <div className="empty">
+          هنوز نوبتی ثبت نشده است.
+          {!provider && <Link href="/therapists">پیدا کردن متخصص ←</Link>}
+        </div>
+      )}
+      {items.map((a) => (
+        <article className="appointment" key={a.id}>
+          <div className="appointment-head">
+            <strong>{provider ? a.patient_name : a.therapist_name}</strong>
+            <span className={'status ' + a.status}>{statuses[a.status]}</span>
+          </div>
+          <p>
+            {dateText(a.starts_at)} ·{' '}
+            {a.mode === 'voice' ? 'مشاوره صوتی' : 'جلسه حضوری'} · {money(a.fee)}
+          </p>
+          <div className="appointment-actions">
+            {a.status === 'booked' && (
+              <>
+                {+new Date(a.starts_at) > Date.now() && (
+                  <>
+                    <button
+                      className="button small secondary"
+                      disabled={busy}
+                      onClick={() => void change(a.id, 'cancel')}
+                    >
+                      لغو نوبت
+                    </button>
+                    {!provider && (
+                      <button
+                        className="button small secondary"
+                        disabled={busy}
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            setSlots(
+                              (await api('therapists/' + a.therapist_id)).slots,
+                            );
+                            setReschedule(a.id);
+                          } catch (e) {
+                            setError((e as Error).message);
+                          }
+                        }}
+                      >
+                        تغییر زمان
+                      </button>
+                    )}
+                  </>
+                )}
+                {provider && +new Date(a.ends_at) <= Date.now() && (
+                  <button
+                    className="button small"
+                    disabled={busy}
+                    onClick={() => void change(a.id, 'complete')}
+                  >
+                    ثبت انجام جلسه
+                  </button>
+                )}
+                {a.mode === 'voice' &&
+                  Date.now() >= +new Date(a.starts_at) - 10 * 60000 &&
+                  Date.now() <= +new Date(a.ends_at) + 15 * 60000 && (
+                    <Link className="button small" href={'/call/' + a.id}>
+                      ورود به تماس صوتی
+                    </Link>
+                  )}
+              </>
+            )}
+            {!provider && a.status === 'completed' && !a.reviewed && (
+              <button
+                className="button small secondary"
+                onClick={() => setReviewId(a.id)}
+              >
+                ثبت نظر
+              </button>
+            )}
+            {a.reviewed && <span className="subtle">نظر شما ثبت شده است.</span>}
+          </div>
+          {reschedule === a.id && (
+            <div className="slot-list">
+              {slots.length ? (
+                slots.map((s) => (
+                  <button
+                    key={s.id}
+                    className="button small secondary"
+                    disabled={busy}
+                    onClick={() => void change(a.id, 'reschedule', s.id)}
+                  >
+                    {dateText(s.starts_at)} ·{' '}
+                    {s.mode === 'voice' ? 'صوتی' : 'حضوری'}
+                  </button>
+                ))
+              ) : (
+                <p className="subtle">زمان دیگری برای این متخصص موجود نیست.</p>
+              )}
+              <button className="text-button" onClick={() => setReschedule('')}>
+                بستن
+              </button>
+            </div>
+          )}
+          {reviewId === a.id && (
+            <form
+              style={{ marginTop: 15 }}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBusy(true);
+                setError('');
+                const f = new FormData(e.currentTarget);
+                try {
+                  await api('reviews', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      appointment_id: a.id,
+                      rating: Number(f.get('rating')),
+                      comment: f.get('comment'),
+                    }),
+                  });
+                  setReviewId('');
+                  await load();
+                  setMessage('نظر شما ثبت شد.');
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <label className="field">
+                امتیاز
+                <select name="rating" defaultValue="5">
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n.toLocaleString('fa-IR')} از ۵
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                تجربه شما
+                <textarea
+                  name="comment"
+                  required
+                  minLength={5}
+                  maxLength={1500}
+                />
+                <small>
+                  این نظر عمومی است؛ اطلاعات شخصی و جزئیات خصوصی جلسه را
+                  ننویسید.
+                </small>
+              </label>
+              <div className="form-actions">
+                <button className="button small" disabled={busy}>
+                  انتشار نظر
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setReviewId('')}
+                >
+                  انصراف
+                </button>
+              </div>
+            </form>
+          )}
+        </article>
+      ))}
+    </div>
+  );
 }
-export function Availability(){const [slots,setSlots]=useState<Slot[]>([]);const [error,setError]=useState('');const [busy,setBusy]=useState(false);async function load(){setSlots((await api('slots')).slots);}useEffect(()=>{load().catch(e=>setError(e.message));},[]);return <div className="panel"><h2>تعریف زمان آزاد</h2><p className="subtle">زمان ورودی با ساعت دستگاه شما ثبت می‌شود؛ نمایش نوبت‌ها به وقت تهران است.</p>{error&&<div className="notice error" role="alert">{error}</div>}<form onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;const f=new FormData(form);setError('');setBusy(true);try{const starts=new Date(String(f.get('start')));const ends=new Date(+starts+Number(f.get('duration'))*60000);await api('slots',{method:'POST',body:JSON.stringify({starts_at:starts.toISOString(),ends_at:ends.toISOString(),mode:f.get('mode')})});await load();form.reset();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}><div className="inline-fields"><label className="field">شروع جلسه<input name="start" type="datetime-local" required/></label><label className="field">مدت (دقیقه)<input name="duration" type="number" min={15} max={180} defaultValue={50} required/></label><label className="field">شیوه جلسه<select name="mode"><option value="in_person">حضوری</option><option value="voice">صوتی</option></select></label><button className="button small" disabled={busy}>افزودن زمان</button></div></form><div className="slot-list">{slots.map(s=><div className="slot-item" key={s.id}><span>{dateText(s.starts_at)} · {s.mode==='voice'?'صوتی':'حضوری'}</span>{s.booked?<span className="status">رزرو شده</span>:<button className="text-button" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{await api('slots/'+s.id,{method:'DELETE'});await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}>حذف زمان</button>}</div>)}</div></div>;}
+export function Availability() {
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function load() {
+    setSlots((await api('slots')).slots);
+  }
+  useEffect(() => {
+    load().catch((e) => setError(e.message));
+  }, []);
+  return (
+    <div className="panel">
+      <h2>تعریف زمان آزاد</h2>
+      <p className="subtle">
+        زمان ورودی با ساعت دستگاه شما ثبت می‌شود؛ نمایش نوبت‌ها به وقت تهران
+        است.
+      </p>
+      {error && (
+        <div className="notice error" role="alert">
+          {error}
+        </div>
+      )}
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          setError('');
+          setBusy(true);
+          try {
+            const starts = new Date(String(f.get('start')));
+            const ends = new Date(+starts + Number(f.get('duration')) * 60000);
+            await api('slots', {
+              method: 'POST',
+              body: JSON.stringify({
+                starts_at: starts.toISOString(),
+                ends_at: ends.toISOString(),
+                mode: f.get('mode'),
+              }),
+            });
+            await load();
+            form.reset();
+          } catch (e) {
+            setError((e as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="inline-fields">
+          <label className="field">
+            شروع جلسه
+            <input name="start" type="datetime-local" required />
+          </label>
+          <label className="field">
+            مدت (دقیقه)
+            <input
+              name="duration"
+              type="number"
+              min={15}
+              max={180}
+              defaultValue={50}
+              required
+            />
+          </label>
+          <label className="field">
+            شیوه جلسه
+            <select name="mode">
+              <option value="in_person">حضوری</option>
+              <option value="voice">صوتی</option>
+            </select>
+          </label>
+          <button className="button small" disabled={busy}>
+            افزودن زمان
+          </button>
+        </div>
+      </form>
+      <div className="slot-list">
+        {slots.map((s) => (
+          <div className="slot-item" key={s.id}>
+            <span>
+              {dateText(s.starts_at)} · {s.mode === 'voice' ? 'صوتی' : 'حضوری'}
+            </span>
+            {s.booked ? (
+              <span className="status">رزرو شده</span>
+            ) : (
+              <button
+                className="text-button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError('');
+                  try {
+                    await api('slots/' + s.id, { method: 'DELETE' });
+                    await load();
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                حذف زمان
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
