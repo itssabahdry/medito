@@ -106,6 +106,31 @@ test('mutations reject foreign origins, including login', async () => {
     403,
   );
 });
+test('registration and password login succeed from the Docker IPv4 loopback origin', async () => {
+  const data = {
+    name: 'تست ثبت‌نام محلی',
+    email: randomUUID() + '@example.test',
+    password: 'Local-origin-password-123',
+    role: 'user',
+  };
+  const registered = await request(
+    'auth/register',
+    'POST',
+    data,
+    '',
+    'http://127.0.0.1:3000',
+  );
+  assert.equal(registered.status, 201);
+  const loggedIn = await request(
+    'auth/login',
+    'POST',
+    { email: data.email, password: data.password },
+    '',
+    'http://127.0.0.1:3000',
+  );
+  assert.equal(loggedIn.status, 200);
+  assert.equal((await loggedIn.json()).user.email, data.email);
+});
 test('sessions are stored hashed, cookies are HttpOnly and logout revokes them', async () => {
   const a = await account();
   const raw = a.cookie.split('=')[1];

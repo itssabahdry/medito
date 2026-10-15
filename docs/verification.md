@@ -5,10 +5,18 @@
 - `npm run typecheck`: passed.
 - `npm run build`: passed on Next.js 16.4.1 / React 19.3.1 / Node 22.23.3.
 - Compose v5.6.0 `config --quiet`: passed.
-- Compose `up -d --build`: attempted; failed before image build because the Windows Docker Engine named pipe does not exist. Docker Desktop and WSL are not installed. No container startup or image build is claimed.
+- Initial Compose `up -d --build` attempt failed because Docker Engine was not installed at that time. Docker is now available; the origin regression fix was built and started successfully with `docker compose up -d --build --wait web`, and both services are healthy.
 - Production standalone includes `pg` and dependencies needed by the runtime migration/admin/seed scripts. Public fonts and static files were copied to the standalone directory for the production smoke test, mirroring the Dockerfile layout.
 - Live government registry requests are not configured; the application records a human verifier's official evidence and interview outcome.
 - External AI requests were not sent: no key/model was supplied. Provider response validation uses controlled responses, and guided mode was exercised end to end.
 - Public TURN connectivity and container backup restoration were not tested without the corresponding infrastructure.
 
 The local `.env` contains random generated credentials and is ignored by Git and the Docker build context. Demo profiles are explicitly marked, contain no real practitioner data, and have no fabricated reviews. Browser-test accounts, uploaded documents and appointment fixtures are removed after tests.
+
+## Local registration origin regression — 2026-10-15
+
+- Reproduced the original error in the running container: a registration request from `http://127.0.0.1:3000` returned 403 while the configured `http://localhost:3000` passed origin validation.
+- Explicit localhost, IPv4 loopback and IPv6 loopback aliases are now allowed only when the configured origin is also loopback, with the same protocol and port. Public deployments still accept only their configured origin; Host and forwarded headers cannot grant trust.
+- `npm test`: **25 passed**, including 8 origin-policy regression tests and a successful IPv4-origin registration/password-login integration test. TypeScript validation passed.
+- Container image production build and Compose health checks passed.
+- Real Chrome registration, logout and password login passed against both `localhost:3000` and `127.0.0.1:3000`; foreign-origin mutations still returned 403. Temporary accounts created for these checks were deleted.

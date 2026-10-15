@@ -51,10 +51,29 @@ export async function readLimited(request: Request, limit: number) {
   return Buffer.concat(chunks);
 }
 export function checkOrigin(request: Request) {
-  const expected = new URL(process.env.APP_URL || 'http://localhost:3000')
-    .origin;
+  const expected = new URL(process.env.APP_URL || 'http://localhost:3000');
+  const origin = request.headers.get('origin');
+  let source: URL | undefined;
+  try {
+    if (origin) source = new URL(origin);
+  } catch {
+    // Missing, opaque and malformed origins must fail the same CSRF check.
+  }
+  const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+  // Docker is commonly opened using 127.0.0.1 while APP_URL uses localhost.
+  // Only these explicit loopback aliases share trust, on the same scheme/port.
+  // Never derive trusted origins from client-supplied Host or proxy headers.
+  const localAlias =
+    source &&
+    loopbackHosts.has(expected.hostname) &&
+    loopbackHosts.has(source.hostname) &&
+    source.protocol === expected.protocol &&
+    source.port === expected.port;
   assert(
-    request.headers.get('origin') === expected,
+    source &&
+      ['http:', 'https:'].includes(source.protocol) &&
+      origin === source.origin &&
+      (source.origin === expected.origin || localAlias),
     403,
     'مبدأ درخواست معتبر نیست.',
   );
