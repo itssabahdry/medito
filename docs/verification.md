@@ -20,3 +20,10 @@ The local `.env` contains random generated credentials and is ignored by Git and
 - `npm test`: **25 passed**, including 8 origin-policy regression tests and a successful IPv4-origin registration/password-login integration test. TypeScript validation passed.
 - Container image production build and Compose health checks passed.
 - Real Chrome registration, logout and password login passed against both `localhost:3000` and `127.0.0.1:3000`; foreign-origin mutations still returned 403. Temporary accounts created for these checks were deleted.
+
+## Administrator provisioning — 2026-10-17
+
+- The screenshot showed Compose invoked from `C:\Windows\System32`, where no project configuration exists. The administrator provisioning command had not executed.
+- Ran the existing provisioning script against the running Compose web service; it created the configured administrator without modifying other accounts.
+- Verified actual administrator password login in Chrome at `127.0.0.1:3000`, the verification dashboard, authorized access to `/api/admin/providers`, and logout. Credentials were read from the local environment without being logged.
+- Repeated the command from `C:\Windows\System32` using `--project-directory 'D:\javascript course\medito'`; Compose found the project and preserved the existing account and password. Added that command to the README.
