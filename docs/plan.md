@@ -1,25 +1,27 @@
-# Medito — scope and delivery order
+# فازبندی مدیتو
 
-1. Analysis: a Persian mental-health practitioner directory with patient, practitioner and administrator roles. No payments, prescriptions, medical records or video calls.
-2. UX and architecture: one Next.js App Router application (React/TypeScript), PostgreSQL, SQL migrations, private document volume. No microservices or ORM.
-3. Registration and verification: password authentication, private identity/license/degree documents, official-reference evidence and recorded human interview. Identity and professional credentials are separate checks. No fabricated government integration. Approval requires an administrator and evidence; external registry access remains an operational dependency.
-4. Profiles and search: approved practitioners, city/specialty/mode filters, private practitioner dashboard.
-5. Scheduling, reviews and ranking: practitioner availability, atomic booking, cancellation/rescheduling, completed-appointment reviews, Bayesian ranking.
-6. Initial release: sensitive-path integration tests, production build, Docker Compose, backup/restore instructions.
-7. In-app audio: appointment-bound WebRTC rooms, authenticated database signaling, microphone/connection lifecycle, configurable TURN.
-8. Matching assistant: opt-in external-model interpretation of the user's stated need; deterministic filtering of approved database profiles. No diagnosis or invented practitioners. Without model configuration, clearly labeled guided search remains available.
+راهنمای هر فاز در یک فایل مستقل داخل پوشه `docs/phases` قرار دارد. ترتیب اجرا مطابق محدوده توافق‌شده پروژه است:
 
-## Acceptance and sensitive tests
+| فاز | راهنما | حوزه مهارتی |
+| --- | --- | --- |
+| ۱ | [تحلیل و تعیین محدوده](phases/01-analysis-and-scope.md) | تحلیل محصول و تعریف معیار پذیرش |
+| ۲ | [طراحی تجربه کاربری و معماری](phases/02-ux-and-architecture.md) | رابط فارسی، معماری و مدل داده |
+| ۳ | [ثبت‌نام و تأیید متخصصان](phases/03-registration-and-verification.md) | احراز هویت، کنترل دسترسی و بررسی صلاحیت |
+| ۴ | [پروفایل و جست‌وجوی متخصص](phases/04-profiles-and-search.md) | پروفایل عمومی، جست‌وجو و حریم خصوصی |
+| ۵ | [نوبت‌دهی و نظرات و پیشنهادها](phases/05-booking-reviews-and-ranking.md) | تراکنش‌های رزرو، اعتبار نظرات و رتبه‌بندی |
+| ۶ | [آزمایش و انتشار نسخه اولیه](phases/06-testing-and-initial-release.md) | تست بخش‌های حساس، Docker Compose و انتشار |
+| ۷ | [مشاوره صوتی داخل برنامه](phases/07-in-app-voice.md) | WebRTC و کنترل دسترسی جلسه |
+| ۸ | [دستیار هوشمند انتخاب تراپیست](phases/08-therapist-matching-assistant.md) | تفسیر نیاز، پیشنهاد متخصص و ارزیابی AI |
 
-- Users cannot choose administrator privileges or approve themselves.
-- Session tokens are hashed at rest, passwords use scrypt, mutations require same-origin requests.
-- Documents never live under public/, are limited to 5 MiB and checked by signature and type; only their owner and administrator may download them.
-- Approval requires all three document types, identity and license checks, official reference, and completed interview. Decisions are audited.
-- Database constraints and transactions prevent overlapping availability and duplicate bookings, including concurrent requests. Past/cancelled/unapproved slots cannot be booked.
-- Only the patient on a completed appointment can submit one review; ratings are validated.
-- Only participants can signal/read a call, during its permitted time window; cancelled sessions close access.
-- AI cannot choose unknown/unapproved practitioners or override explicit filters. No conversations or documents are sent to the model without user consent.
+هر فایل هدف، پیش‌نیاز، مراحل کار، خروجی و معیار پذیرش همان فاز را مشخص می‌کند. تست‌های حساس همراه قابلیت مربوط اجرا می‌شوند؛ فاز ششم مرحله بررسی یکپارچه و انتشار نسخه اولیه است. فازهای هفتم و هشتم پس از نسخه اولیه ارائه می‌شوند و تست‌های خودشان را دارند.
 
-## Release boundary
+## قواعد مشترک
 
-Phases 1–6 form the initial release. Audio and the assistant are subsequent features in the same repository. Automated checks accompany the corresponding implementation, not just the release phase. Government services, provider credentials, HTTPS and public TURN infrastructure cannot be manufactured by the application.
+- فناوری پروژه React، Next.js، TypeScript و PostgreSQL است؛ اجرا با Docker Compose انجام می‌شود.
+- ساختار یک برنامه واحد با SQL مستقیم، migrationهای نسخه‌دار و فضای خصوصی مدارک حفظ شود.
+- محدوده شامل نقش مراجع، متخصص و مدیر است. پرداخت، نسخه پزشکی، پرونده درمانی و تماس تصویری در محدوده فعلی نیستند.
+- اطلاعات واقعی کاربران و مدارک آن‌ها در تست‌ها استفاده نشوند؛ داده‌های نمایشی برچسب مشخص داشته باشند.
+- دسترسی دولتی، کلید مدل، HTTPS و TURN باید از زیرساخت واقعی تأمین شوند؛ نتیجه استعلام یا اتصال موفق ساخته نشود.
+- هر قابلیت و اصلاح مرتبط در یک کامیت مشخص ثبت شود و نتیجه بررسی‌ها و محدودیت‌های واقعی گزارش شود.
+
+وضعیت بررسی‌های انجام‌شده و محدودیت‌های محیط در [گزارش اعتبارسنجی](verification.md) و روش اجرا در [README](../README.md) آمده است.
