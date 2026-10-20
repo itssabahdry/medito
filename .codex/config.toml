@@ -1,0 +1,5 @@
+# Project-local agent coordination. Inherit the active model and permissions.
+[agents]
+enabled = true
+# Three specialists plus the primary coordinator fit the current four slots.
+max_concurrent_threads_per_session = 3
